@@ -1,0 +1,273 @@
+// ============================================================================
+// Project: NeamClaw Customer Support Bot
+// Description: A persistent conversational support agent for an e-commerce
+//              store called "TechNova". Handles order lookup, FAQ retrieval,
+//              ticket creation, and escalation to human agents.
+// Provider: Ollama (free, local)
+// Model: llama3.1 (swap to mistral, phi3, etc. as needed)
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// 1. MCP Server — connects to the local SQLite database for order data
+// ---------------------------------------------------------------------------
+
+mcp_server local_db {
+  transport: "stdio"
+  command:   "npx"
+  args:      ["-y", "@anthropic/mcp-sqlite", "--db", "./data/technova.db"]
+}
+
+// ---------------------------------------------------------------------------
+// 2. Knowledge Base — FAQ / policy documents for RAG
+// ---------------------------------------------------------------------------
+
+knowledge SupportKB {
+  vector_store:       "usearch"
+  embedding_model:    "nomic-embed-text"      // runs locally via Ollama
+  chunk_size:         200
+  chunk_overlap:      50
+  retrieval_strategy: "hybrid"                // BM25 + vector for best results
+  top_k:              4
+
+  sources: [
+    { type: "file", path: "./data/faq.md" },
+    { type: "file", path: "./data/return_policy.md" },
+    { type: "file", path: "./data/shipping_info.md" },
+    { type: "file", path: "./data/warranty.md" }
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// 3. Skills — tools the agent can call
+// ---------------------------------------------------------------------------
+
+// 3a. Look up an order by ID from the SQLite database
+skill lookup_order {
+  description: "Look up a customer order by order ID. Returns order status, items, shipping info, and dates."
+  params: {
+    order_id: string
+  }
+  impl(args) {
+    let query = "SELECT o.id, o.status, o.created_at, o.shipped_at, o.total_amount, " +
+                "o.tracking_number, c.name AS customer_name, c.email " +
+                "FROM orders o JOIN customers c ON o.customer_id = c.id " +
+                "WHERE o.id = '" + args.order_id + "' LIMIT 1;";
+    let result = http_post("http://localhost:3100/query", { sql: query });
+    return result;
+  }
+}
+
+// 3b. Look up an order by customer email
+skill lookup_order_by_email {
+  description: "Look up all orders for a customer using their email address."
+  params: {
+    email: string
+  }
+  impl(args) {
+    let query = "SELECT o.id, o.status, o.created_at, o.total_amount, o.tracking_number " +
+                "FROM orders o JOIN customers c ON o.customer_id = c.id " +
+                "WHERE c.email = '" + args.email + "' ORDER BY o.created_at DESC LIMIT 5;";
+    let result = http_post("http://localhost:3100/query", { sql: query });
+    return result;
+  }
+}
+
+// 3c. Create a support ticket
+skill create_ticket {
+  description: "Create a new support ticket when the customer issue cannot be resolved immediately. Use this for complaints, refund requests, or complex problems."
+  params: {
+    customer_email: string,
+    subject:        string,
+    description:    string,
+    priority:       string     // "low", "medium", "high"
+  }
+  impl(args) {
+    let ticket_id = "TKT-" + str(timestamp());
+    let record = {
+      id:          ticket_id,
+      email:       args.customer_email,
+      subject:     args.subject,
+      description: args.description,
+      priority:    args.priority,
+      status:      "open",
+      created_at:  timestamp()
+    };
+    workspace_write("tickets/" + ticket_id + ".json", json_stringify(record));
+    return { ticket_id: ticket_id, message: "Ticket created successfully." };
+  }
+}
+
+// 3d. Check product availability
+skill check_product {
+  description: "Check if a product is in stock and get its current price."
+  params: {
+    product_name: string
+  }
+  impl(args) {
+    let query = "SELECT id, name, price, stock_quantity, category " +
+                "FROM products WHERE name LIKE '%" + args.product_name + "%' LIMIT 5;";
+    let result = http_post("http://localhost:3100/query", { sql: query });
+    return result;
+  }
+}
+
+// 3e. Escalate to human — sensitive action
+skill escalate_to_human {
+  description: "Escalate the conversation to a human support agent. Only use when the customer explicitly requests a human or the issue is too complex."
+  sensitive: true    // requires explicit approval before executing
+  params: {
+    reason:         string,
+    customer_email: string
+  }
+  impl(args) {
+    let escalation = {
+      id:         "ESC-" + str(timestamp()),
+      reason:     args.reason,
+      email:      args.customer_email,
+      created_at: timestamp()
+    };
+    workspace_write("escalations/" + escalation.id + ".json", json_stringify(escalation));
+    return { message: "Escalated. A human agent will contact you within 2 hours.", escalation_id: escalation.id };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. Claw Agent — the main conversational support bot
+// ---------------------------------------------------------------------------
+
+claw agent support_bot {
+  provider: "ollama"
+  model:    "llama3.1"
+
+  system_prompt: """
+    You are **Nova**, the friendly and professional customer support assistant
+    for **TechNova**, an online electronics and gadgets store.
+
+    Your responsibilities:
+    1. Greet customers warmly and ask how you can help.
+    2. Answer questions about products, orders, shipping, returns, and warranties
+       using the knowledge base and tools available to you.
+    3. Look up orders when customers provide an order ID or email.
+    4. Create support tickets for issues you cannot resolve immediately.
+    5. Escalate to a human agent ONLY when explicitly requested or when the issue
+       is beyond your capabilities.
+
+    Guidelines:
+    - Always be polite, empathetic, and concise.
+    - Never guess — if you don't know, say so and offer to create a ticket.
+    - For return/refund requests, always check the return policy first.
+    - Confirm order details before making any changes.
+    - End every interaction by asking if there's anything else you can help with.
+  """
+
+  temperature: 0.3       // low creativity — we want accurate, consistent answers
+
+  skills: [
+    lookup_order,
+    lookup_order_by_email,
+    create_ticket,
+    check_product,
+    escalate_to_human
+  ]
+
+  connected_knowledge: [SupportKB]
+
+  // --- Session Configuration ---
+  session: {
+    storage:            "jsonl"
+    idle_reset_minutes: 30          // reset session after 30 min idle
+    daily_reset_hour:   4           // reset all sessions at 4 AM
+    max_history_turns:  60          // keep last 60 turns before compaction
+  }
+
+  // --- Channels ---
+  channels: [
+    { type: "cli" },                                       // terminal for dev/testing
+    { type: "http", path: "/chat", port: 8080 }           // REST endpoint for production
+  ]
+
+  // --- Workspace for tickets & escalations ---
+  workspace: "./workspace"
+
+  // --- Semantic Memory ---
+  semantic_memory: {
+    backend:          "sqlite"
+    search:           "hybrid"
+    flush_on_compact: true      // extract facts before compaction
+  }
+
+  // --- Lanes for concurrency ---
+  lanes: [
+    { name: "default",  concurrency: 4, priority: "normal" },
+    { name: "vip",      concurrency: 2, priority: "high"   }
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// 5. Trait Implementations
+// ---------------------------------------------------------------------------
+
+// Schedulable — periodic health check / stale ticket reminder
+impl Schedulable for support_bot {
+  fn heartbeat_interval(self) {
+    return 300000;    // every 5 minutes
+  }
+
+  fn on_heartbeat(self) {
+    // Check for stale open tickets older than 24 hours
+    let files = workspace_read("tickets/");
+    if (files != nil) {
+      return HeartbeatAction.Notify("Heartbeat OK — ticket directory accessible.");
+    }
+    return HeartbeatAction.Silent;
+  }
+
+  fn on_cron(self, cron_id) {
+    return HeartbeatAction.Silent;
+  }
+}
+
+// Monitorable — detect anomalies (e.g., too many escalations)
+impl Monitorable for support_bot {
+  fn baseline(self) {
+    return {
+      avg_response_time_ms: 2000,
+      max_escalations_per_hour: 5
+    };
+  }
+
+  fn on_anomaly(self, event) {
+    if (event.type == "escalation_spike") {
+      return AnomalyAction.Alert("Escalation rate exceeded baseline — possible system issue.");
+    }
+    return AnomalyAction.Silence;
+  }
+}
+
+// Sandboxable — restrict what the agent can do
+impl Sandboxable for support_bot {
+  fn sandbox_config(self) {
+    return {
+      mode:             "strict",
+      network:          true,             // needs DB and API access
+      filesystem:       "workspace_only", // can only write to workspace
+      allowed_commands: [],               // no shell commands
+      max_memory_mb:    512
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 6. Entry Point
+// ---------------------------------------------------------------------------
+
+fn main() {
+  print("========================================");
+  print("  TechNova Support Bot (Nova) v1.0");
+  print("  Powered by Neam + Ollama");
+  print("========================================");
+  print("");
+  print("Starting support_bot on CLI and HTTP :8080 ...");
+  print("Type your message below. Type 'exit' to quit.");
+  print("");
+}

@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  # Ollama — local LLM server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: technova-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]    # optional — remove if no GPU
+
+  # Pull the models on first run
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: technova-ollama-setup
+    depends_on:
+      - ollama
+    entrypoint: >
+      sh -c "
+        sleep 5 &&
+        ollama pull llama3.1 &&
+        ollama pull nomic-embed-text &&
+        echo 'Models ready!'
+      "
+    environment:
+      - OLLAMA_HOST=ollama:11434
+
+  # TechNova Support Bot
+  support-bot:
+    build: .
+    container_name: technova-support-bot
+    depends_on:
+      - ollama
+    ports:
+      - "8080:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - NEAM_API_KEY=${NEAM_API_KEY:-dev-key-change-me}
+      - NEAM_LOG_LEVEL=info
+    volumes:
+      - bot_sessions:/home/neam/.neam/sessions
+      - bot_workspace:/home/neam/workspace
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  bot_sessions:
+  bot_workspace:
