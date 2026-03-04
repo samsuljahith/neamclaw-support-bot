@@ -2,6 +2,10 @@
 
 <img src="assets/neam-logo.jpeg" alt="Neam Logo" width="120" />
 
+<br/>
+
+https://github.com/samsuljahith/neamclaw-support-bot/raw/master/assets/demo.mp4
+
 # TechNova Support Bot
 
 ### Built with Neam's Claw Agent — Local AI, Zero Cloud API Cost
