@@ -1,14 +1,18 @@
 <div align="center">
 
+<img src="assets/neam-logo.jpeg" alt="Neam Logo" width="120" />
+
 # TechNova Support Bot
 
-### Built with Neam's Claw Agent — Local AI, Zero Cloud Cost
+### Built with Neam's Claw Agent — Local AI, Zero Cloud API Cost
 
 [![Neam](https://img.shields.io/badge/Built%20with-Neam-6366f1?style=for-the-badge)](https://github.com/neam-lang/neam)
 [![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-000000?style=for-the-badge)](https://ollama.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-> **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam. Costs $0/month to run.**
+> **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam.**
+
+> **Zero cloud API costs.** Runs entirely on your own hardware using Ollama. You pay for your machine and electricity — not per token, not per call, not per month to any AI provider.
 
 </div>
 
@@ -41,7 +45,7 @@ I used **Neam's Claw Agent** — a persistent, conversational agent type — to 
 - **Runs locally for free**: Ollama + llama3.1 — no cloud API costs, ever
 - **Handles traffic**: Concurrency lanes for default and VIP priority queues
 
-**Result: A support agent that costs $0/month (vs. $500+/month for cloud AI) and handles unlimited conversations 24/7.**
+**Result: A support agent with $0/month in cloud AI costs (vs. $500+/month for GPT-4/Claude APIs) that handles unlimited conversations 24/7 — running on hardware you already own.**
 
 ---
 
@@ -174,13 +178,14 @@ claw agent support_bot {
 
 | Metric | Before | With Nova (Neam) |
 |---|---|---|
-| Cost per interaction | $5–$15 | **$0** |
+| Cost per interaction | $5–$15 | **$0 cloud API cost** (runs on your hardware) |
 | Response time | 2–8 hours | **< 2 seconds** |
 | Availability | Business hours | **24/7 / 365** |
 | Conversation memory | Agent must re-ask every time | **Full persistent history** |
 | Policy knowledge | Requires staff training | **Instant via RAG** |
 | Order lookup | Human searches manually | **Automatic via skill** |
-| Monthly infrastructure cost | $500+ (cloud AI) | **$0 (Ollama, local)** |
+| Monthly cloud AI cost | $500+ (GPT-4 / Claude API) | **$0 — no cloud API used** |
+| Infrastructure cost | Variable | Hardware + electricity you already own |
 
 ---
 

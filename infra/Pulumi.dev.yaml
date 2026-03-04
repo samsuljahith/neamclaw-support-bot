@@ -1,0 +1,4 @@
+config:
+  aws:region: us-east-1
+  technova-infra:anthropicApiKey:
+    secure: AAABAC8Yp+qfq7Aldd8BnTXtz0KyuF/5nwbnte8+qpVbtOzjsDzLvEGKMNqoyzvili7kMw88FFV4EMdb6PVO2A1N81O8ScLYu6HNzNt0KhFdwZ/s/pqEXL17yl+5wLBSabrpmMCsOa8STRqjF8QMZjXfZwF+UJ/Zk/BejqMBgm9bueuzdlRJAw+/y7M=

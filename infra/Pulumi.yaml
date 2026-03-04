@@ -1,0 +1,6 @@
+name: technova-infra
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+description: TechNova Support Bot — AWS Lambda + API Gateway infrastructure
