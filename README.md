@@ -1,264 +1,217 @@
-# 🤖 TechNova Support Bot — NeamClaw Agent
+<div align="center">
 
-**A persistent, AI-powered customer support agent for e-commerce — built entirely with the Neam programming language.**
+# TechNova Support Bot
+
+### Built with Neam's Claw Agent — Local AI, Zero Cloud Cost
+
+[![Neam](https://img.shields.io/badge/Built%20with-Neam-6366f1?style=for-the-badge)](https://github.com/neam-lang/neam)
+[![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-000000?style=for-the-badge)](https://ollama.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+> **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam. Costs $0/month to run.**
+
+</div>
 
 ---
 
-## 📌 What Is This Project?
+## The Business Problem
 
-This project is a **fully functional, end-to-end customer support chatbot** for a fictional online electronics store called **TechNova**. It is built using the **Claw Agent** architecture from the **Neam programming language** — a declarative language designed specifically for building AI agents.
+> "Every customer support ticket costs **$5–$15** when handled by humans. During peak seasons, queues stretch **hours**. Existing chatbots? Rigid, expensive, or clueless about your business."
 
-The bot ("Nova") can hold multi-turn conversations, remember context across messages, look up real orders from a database, answer policy questions using a knowledge base, create support tickets, and escalate to human agents when needed — all running **100% locally** using Ollama (no paid APIs).
-
----
-
-## 🌍 Real-World Problem It Solves
-
-### The Problem
-
-E-commerce companies spend **$5–$15 per customer support interaction** when handled by human agents. During peak seasons (sales, holidays), support queues can stretch to **hours-long wait times**, leading to frustrated customers and lost revenue. Small and mid-size businesses often can't afford 24/7 support teams.
-
-Existing chatbot solutions are typically:
-- **Rigid rule-based bots** that fail the moment a customer goes off-script
-- **Expensive cloud AI APIs** (GPT-4, Claude) that cost $2–$25 per 1M tokens
-- **Stateless** — they don't remember what you said 2 messages ago
-- **Dumb about your business** — they can't look up orders or check policies
-
-### How This Project Solves It
-
-This bot demonstrates that with the **Neam programming language**, you can build a support agent that is:
-
-| Problem | Our Solution |
+| Pain Point | Real Cost |
 |---|---|
-| Rigid rule-based bots | LLM-powered natural conversation that handles unexpected questions |
-| Expensive cloud APIs | **Ollama + llama3.1** — runs 100% free on your own hardware |
-| No conversation memory | **NeamClaw sessions** — persistent JSONL history with auto-compaction |
-| Can't access business data | **5 custom skills** — order lookup, ticket creation, product search |
-| Doesn't know your policies | **RAG knowledge base** — FAQ, returns, shipping, warranty docs |
-| No safety controls | **Sensitive skill flag**, input guards, sandboxed execution |
-| Can't handle high traffic | **Concurrency lanes** — default + VIP priority queues |
-| No observability | **Traits** — heartbeat monitoring, anomaly detection, sandboxing |
+| Human agents per interaction | $5–$15 per conversation |
+| Peak season wait times | 2–8 hours |
+| Cloud AI APIs (GPT-4, Claude) | $2–$25 per 1M tokens |
+| Stateless bots that forget context | Customers repeat themselves every message |
+| Bots with no business data | Can't look up orders, check stock, create tickets |
+| No safety guardrails | Escalations happen incorrectly or at wrong times |
 
-The result is a production-ready support agent that **costs $0/month to run** (vs. $500+/month for cloud AI), **handles unlimited conversations** 24/7, and **actually knows your business**.
+Small and mid-size e-commerce businesses can't afford 24/7 support teams — but they also can't afford to lose customers to long waits and robotic responses.
 
 ---
 
-## 🎯 What I Built
+## How I Solved It with Neam
 
-### Core Agent (`support_bot.neam` — 273 lines)
+I used **Neam's Claw Agent** — a persistent, conversational agent type — to build a support bot that:
 
-A single Neam source file that defines the entire support system:
+- **Knows your business**: Hybrid RAG knowledge base with your actual FAQ, return policy, shipping info, and warranty docs
+- **Remembers context**: JSONL session storage that survives server restarts and auto-compacts at 80% token budget
+- **Calls real tools**: 5 skills that query your actual SQLite database (orders, products, customers)
+- **Runs locally for free**: Ollama + llama3.1 — no cloud API costs, ever
+- **Handles traffic**: Concurrency lanes for default and VIP priority queues
 
-**1. Knowledge Base with Hybrid RAG**
+**Result: A support agent that costs $0/month (vs. $500+/month for cloud AI) and handles unlimited conversations 24/7.**
+
+---
+
+## How It Works — Live Conversation
+
+```mermaid
+sequenceDiagram
+    participant C as 👤 Customer
+    participant N as 🤖 Nova (Claw Agent)
+    participant RAG as 📚 Knowledge Base
+    participant DB as 🗄️ SQLite Database
+    participant T as 🎫 Ticket System
+
+    C->>N: "My earbuds stopped working. Email: alice@example.com"
+
+    N->>DB: lookup_order_by_email("alice@example.com")
+    DB-->>N: ORD-10001 — Earbuds + Power Bank, Delivered Jan 21
+
+    N->>RAG: retrieve("warranty defective earbuds")
+    RAG-->>N: 1-year warranty coverage, claim process, return label info
+
+    N-->>C: "Found your order! Earbuds are within 1-year warranty. Shall I create a claim ticket?"
+
+    C->>N: "Yes please"
+
+    N->>T: create_ticket({email, subject: "Warranty claim - Pro Earbuds", priority: "medium"})
+    T-->>N: Ticket TKT-1709234567 created
+
+    N-->>C: "Done! Ticket TKT-1709234567 created. You'll get an email with next steps. Anything else?"
+```
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TB
+    Customer(["👤 Customer\n(CLI / HTTP)"])
+
+    subgraph NeamClaw["🦾 NeamClaw Runtime"]
+        Guard["🛡️ Security Guard\n(input validation)"]
+        Lane["🚦 Lane Router\n(default / VIP queues)"]
+        Session["💾 Session Manager\n(JSONL + auto-compaction)"]
+        Context["📋 Context Builder\n(prompt + history + RAG + memory)"]
+        LLM["🦙 Ollama llama3.1\n(local — no cloud)"]
+        Skills["🔧 5 Business Skills"]
+    end
+
+    subgraph Data["Data Layer"]
+        SQLite[("🗄️ SQLite\n(orders, products, customers)")]
+        KB["📚 Knowledge Base\n(4 policy docs — hybrid RAG)"]
+        Memory["🧠 Semantic Memory\n(SQLite — hybrid search)"]
+        Workspace["📁 Workspace\n(tickets, escalations)"]
+    end
+
+    Customer -->|message| Guard
+    Guard --> Lane
+    Lane --> Session
+    Session --> Context
+    Context --> LLM
+    LLM --> Skills
+    Skills -->|order lookup| SQLite
+    Skills -->|policy Q&A| KB
+    Skills -->|ticket create| Workspace
+    Memory -->|inject context| Context
+    LLM -->|response| Customer
+```
+
+---
+
+## 5 Business Skills Powering Nova
+
+| Skill | What It Does | Business Value |
+|---|---|---|
+| `lookup_order` | Find order status, tracking number, delivery dates | Resolve "where's my order?" in seconds |
+| `lookup_order_by_email` | Find all orders for a customer email | Full order history without asking for IDs |
+| `create_ticket` | Open a support ticket for unresolved issues | Structured follow-up, nothing falls through |
+| `check_product` | Check stock levels and pricing | Answer "is this in stock?" with live data |
+| `escalate_to_human` | Hand off to a human agent (**sensitive — requires approval**) | Safe escalation with human-in-the-loop |
+
+---
+
+## The Claw Agent in Neam
+
+The entire support system lives in **273 lines** of Neam:
+
 ```neam
+// 1. RAG Knowledge Base — your real business documents
 knowledge SupportKB {
   vector_store:       "usearch"
   embedding_model:    "nomic-embed-text"
-  retrieval_strategy: "hybrid"          // BM25 + vector search combined
+  retrieval_strategy: "hybrid"     // BM25 + vector search combined
   top_k:              4
   sources: [faq.md, return_policy.md, shipping_info.md, warranty.md]
 }
+
+// 2. Persistent Claw Agent
+claw agent support_bot {
+  provider:            "ollama"
+  model:               "llama3.1"
+  connected_knowledge: [SupportKB]
+
+  // Persistent conversation memory
+  session: {
+    storage:            "jsonl"
+    idle_reset_minutes: 30
+    max_history_turns:  60
+  }
+
+  // Long-term fact retention across sessions
+  semantic_memory: {
+    backend:          "sqlite"
+    search:           "hybrid"
+    flush_on_compact: true    // extract facts before summarization
+  }
+
+  channels: [cli, { http: { port: 8080 } }]
+
+  // Priority queues
+  lanes: [
+    { name: "default", concurrency: 4 }
+    { name: "vip",     concurrency: 2, priority: "high" }
+  ]
+}
 ```
-- 4 real-world policy documents (~3,000 words total) chunked and indexed
-- Hybrid retrieval combines keyword matching (BM25) with semantic vector search
-- Top 4 most relevant chunks injected into every LLM call automatically
 
-**2. Five Purpose-Built Skills (Tools)**
+---
 
-| Skill | What It Does | Data Source |
+## Business Impact
+
+| Metric | Before | With Nova (Neam) |
 |---|---|---|
-| `lookup_order` | Find order by ID (status, tracking, dates) | SQLite query |
-| `lookup_order_by_email` | Find all orders for a customer email | SQLite query |
-| `create_ticket` | Create support ticket for unresolved issues | Workspace JSON file |
-| `check_product` | Check product stock and pricing | SQLite query |
-| `escalate_to_human` | Escalate to human agent (**sensitive** — requires approval) | Workspace JSON file |
-
-**3. Persistent Session Management**
-```neam
-session: {
-  storage:            "jsonl"
-  idle_reset_minutes: 30
-  daily_reset_hour:   4
-  max_history_turns:  60
-}
-```
-- Conversations stored as JSONL files, survive server restarts
-- Auto-compaction at 80% token budget — keeps recent 20 turns verbatim, summarizes older ones
-- Idle sessions reset after 30 minutes, all sessions reset at 4 AM daily
-
-**4. Semantic Memory with Pre-Compaction Flush**
-```neam
-semantic_memory: {
-  backend: "sqlite"
-  search:  "hybrid"
-  flush_on_compact: true
-}
-```
-- Facts extracted from conversations before compaction (so nothing is truly lost)
-- Hybrid search (70% vector + 30% BM25) over accumulated knowledge
-- Automatically injected as `[MEMORY CONTEXT]` in every prompt
-
-**5. Multi-Channel Deployment**
-- **CLI channel** — terminal interface for development and testing
-- **HTTP channel** — REST API at port 8080 for production integration
-
-**6. Concurrency Lanes**
-- `default` lane — 4 concurrent requests at normal priority
-- `vip` lane — 2 concurrent requests at high priority
-
-**7. Three Trait Implementations**
-- **Schedulable** — heartbeat every 5 minutes to monitor ticket directory health
-- **Monitorable** — detects escalation spikes (>5/hour triggers alert)
-- **Sandboxable** — strict mode: network for DB only, filesystem limited to workspace, no shell commands, 512MB memory cap
-
-### Database (`data/seed.sql`)
-
-A complete SQLite schema with realistic seed data:
-- **5 customers** with names, emails, phones
-- **10 products** across 5 categories (Audio, Accessories, Wearables, Peripherals, Storage, Home) with stock levels and prices ($39.99–$199.99)
-- **7 orders** in all possible states: pending, processing, shipped, delivered, cancelled
-- **10 order items** linking orders to products
-
-### Knowledge Documents (`data/`)
-
-Four comprehensive Markdown documents totaling ~3,000 words:
-- **faq.md** — 20+ Q&A pairs covering orders, shipping, returns, products, account, contact
-- **return_policy.md** — 30-day return window, conditions, restocking fees, refund process, holiday extensions
-- **shipping_info.md** — 3 domestic tiers, international rates for 40+ countries, carrier info, delivery issue resolution
-- **warranty.md** — 1-year standard warranty, extended plans, claim process, repair vs replacement policy
-
-### Docker Setup
-
-- **Dockerfile** — multi-stage build (compile Neam → minimal runtime with SQLite)
-- **docker-compose.yml** — one-command setup: Ollama + model pull + support bot
-- **Volume mounts** — sessions and workspace persist across container restarts
+| Cost per interaction | $5–$15 | **$0** |
+| Response time | 2–8 hours | **< 2 seconds** |
+| Availability | Business hours | **24/7 / 365** |
+| Conversation memory | Agent must re-ask every time | **Full persistent history** |
+| Policy knowledge | Requires staff training | **Instant via RAG** |
+| Order lookup | Human searches manually | **Automatic via skill** |
+| Monthly infrastructure cost | $500+ (cloud AI) | **$0 (Ollama, local)** |
 
 ---
 
-## 🏗️ Architecture
+## Quick Start
 
-```
-┌──────────────┐       ┌─────────────────────────────────────────────────┐
-│   Customer    │       │               NeamClaw Runtime                  │
-│  (CLI/HTTP)   │──────▶│                                                 │
-└──────────────┘       │  ┌──────────┐  ┌───────────┐  ┌──────────────┐ │
-                       │  │ Security │  │  Session   │  │   Context    │ │
-                       │  │  Guard   │─▶│  Manager   │─▶│   Builder    │ │
-                       │  └──────────┘  │ (JSONL +   │  │ (system +   │ │
-                       │                │ compaction) │  │ history +   │ │
-                       │                └───────────┘  │ RAG + memory)│ │
-                       │                               └──────┬───────┘ │
-                       │                                      │         │
-                       │                                      ▼         │
-                       │                            ┌──────────────┐    │
-                       │                            │ 🦙 Ollama    │    │
-                       │                            │   llama3.1   │    │
-                       │                            └──────┬───────┘    │
-                       │                                   │            │
-                       │                    ┌──────────────┤            │
-                       │                    ▼              ▼            │
-                       │              ┌──────────┐  ┌──────────┐       │
-                       │              │  Skills   │  │ Response │       │
-                       │              │ (5 tools) │  │  Output  │───────▶ 💬
-                       │              └─────┬─────┘  └──────────┘       │
-                       │                    │                           │
-                       │          ┌─────────┼─────────┐                │
-                       │          ▼         ▼         ▼                │
-                       │     ┌────────┐ ┌────────┐ ┌────────┐         │
-                       │     │ SQLite │ │Workspace│ │  RAG   │         │
-                       │     │(orders)│ │(tickets)│ │(4 docs)│         │
-                       │     └────────┘ └────────┘ └────────┘         │
-                       └─────────────────────────────────────────────────┘
-```
-
-### Request Pipeline (Step by Step)
-
-1. **Customer sends message** via CLI (terminal) or HTTP POST to `/api/v1/claw/support_bot/sessions/{key}/message`
-2. **Security guard** checks input for safety
-3. **Lane router** assigns to default or VIP queue based on priority
-4. **Session manager** loads conversation history from JSONL, triggers compaction if approaching token limit
-5. **Context builder** assembles the prompt: system prompt + conversation history + top-4 RAG chunks + semantic memory context
-6. **LLM (Ollama/llama3.1)** generates a response, potentially requesting tool calls
-7. **Tool-calling loop** executes requested skills (order lookup → SQLite, ticket creation → workspace, etc.)
-8. **Response** sent back to customer through the same channel
-9. **Session updated** — new turn appended to JSONL history
-
----
-
-## 💬 Example Conversation
-
-```
-Customer: Hi, I ordered some earbuds last month and they stopped working.
-          My email is alice@example.com
-
-Nova:     I'm sorry to hear about your earbuds! Let me look up your orders.
-          [calls lookup_order_by_email("alice@example.com")]
-
-          I found your orders:
-          • ORD-10001 — Delivered Jan 21 (Earbuds + Power Bank — $129.98)
-          • ORD-10003 — Processing (Mechanical Keyboard K7)
-
-          Your earbuds were in order ORD-10001. Since they're defective,
-          they should be covered under our 1-year warranty. Let me check...
-          [retrieves warranty.md chunks via RAG]
-
-          Good news! Your earbuds are within the 1-year warranty period
-          (purchased Jan 15, 2026). Here's what to do:
-          1. I'll create a warranty claim ticket for you
-          2. Our team will email you a prepaid return label
-          3. We'll repair or replace within 10 business days
-
-          Shall I create that ticket now?
-
-Customer: Yes please
-
-Nova:     [calls create_ticket({email: "alice@example.com", subject:
-          "Warranty claim - defective Pro Wireless Earbuds",
-          priority: "medium"})]
-
-          Done! Ticket TKT-1709234567 has been created. You'll receive
-          an email at alice@example.com with next steps.
-
-          Is there anything else I can help with?
-```
-
----
-
-## 🚀 Quick Start
-
-### Option A: Docker (Recommended — Fully Reproducible)
+### Docker (Recommended)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/neamclaw-support-bot.git
+git clone https://github.com/samsuljahith/neamclaw-support-bot.git
 cd neamclaw-support-bot
 
 cp .env.example .env
 docker compose up --build
+# First run pulls llama3.1 (~4.7 GB) — takes 5–10 minutes
 
-# First run pulls llama3.1 (~4.7 GB) — takes 5-10 minutes
-
-# Test:
+# Test it:
 curl -X POST http://localhost:8080/api/v1/claw/support_bot/sessions/test/message \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer dev-key-change-me" \
-  -d '{"message": "Hi! What is your return policy?"}'
+  -d '{"message": "What is your return policy?"}'
 ```
 
-### Option B: Local (Manual Setup)
+### Local Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/neamclaw-support-bot.git
+git clone https://github.com/samsuljahith/neamclaw-support-bot.git
 cd neamclaw-support-bot
 
-# Start Ollama + pull models
-ollama serve &
-ollama pull llama3.1
-ollama pull nomic-embed-text
-
-# Seed database
+ollama pull llama3.1 && ollama pull nomic-embed-text
 sqlite3 ./data/technova.db < ./data/seed.sql
 
-# Compile and run
 neamc support_bot.neam -o support_bot.neamb
 neam support_bot.neamb          # CLI mode
 # OR
@@ -267,97 +220,59 @@ neam-api --program support_bot.neamb --port 8080   # HTTP mode
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 neamclaw-support-bot/
-├── support_bot.neam          # Complete agent source (273 lines)
-│                               ├── MCP server config
-│                               ├── Knowledge base (SupportKB)
-│                               ├── 5 skill definitions
-│                               ├── Claw agent declaration
-│                               ├── 3 trait implementations
-│                               └── Entry point
+├── support_bot.neam          # Complete agent — 273 lines
 ├── data/
-│   ├── seed.sql              # SQLite schema + seed data
-│   ├── faq.md                # FAQ knowledge document (20+ Q&A)
-│   ├── return_policy.md      # Return policy document
-│   ├── shipping_info.md      # Shipping rates & carriers
-│   └── warranty.md           # Warranty terms & claims
-├── docker-compose.yml        # Ollama + bot (one command)
+│   ├── seed.sql              # 5 customers, 10 products, 7 orders
+│   ├── faq.md                # 20+ Q&A pairs
+│   ├── return_policy.md      # 30-day return policy
+│   ├── shipping_info.md      # Domestic + 40-country shipping rates
+│   └── warranty.md           # 1-year warranty terms + claim process
+├── docker-compose.yml        # Ollama + bot (one-command setup)
 ├── Dockerfile                # Multi-stage build
-├── .env.example              # Environment template
-├── .gitignore
+├── .env.example
 └── README.md
 ```
 
 ---
 
-## 🧠 Neam Language Concepts Demonstrated
+## Neam Concepts Demonstrated
 
-This project is a comprehensive reference for anyone learning NeamClaw:
-
-| Neam Concept | What It Is | Where Used |
-|---|---|---|
-| `claw agent` | Persistent conversational agent type | Main agent declaration |
-| `knowledge` | RAG knowledge base with vector store | `SupportKB` — 4 docs, hybrid retrieval |
-| `skill` with `params` shorthand | Tool/function the agent can call | 5 skills: lookup, ticket, product, escalate |
-| `sensitive: true` | Requires human approval before execution | `escalate_to_human` skill |
-| `mcp_server` | External tool server via MCP protocol | SQLite database connection |
-| `connected_knowledge` | Link RAG knowledge to an agent | `connected_knowledge: [SupportKB]` |
-| `session` config | Persistent conversation storage | JSONL, 30min idle reset, 60 turn max |
-| `channels` | Input/output interfaces | CLI + HTTP on port 8080 |
-| `workspace` | Persistent file storage for agent | Tickets and escalation JSON files |
-| `semantic_memory` | Long-term queryable memory | SQLite backend, hybrid search |
-| `flush_on_compact` | Extract facts before summarization | Preserves knowledge across compactions |
-| `lanes` | Concurrency partitioning with priority | default (4, normal) + vip (2, high) |
-| `impl Schedulable` | Periodic heartbeat callbacks | 5-minute health check |
-| `impl Monitorable` | Anomaly detection with baselines | Escalation spike detection |
-| `impl Sandboxable` | Security sandbox configuration | Strict mode, workspace-only filesystem |
-| `workspace_read`/`write` | Native workspace I/O functions | Inside skill implementations |
-| `http_post` | HTTP requests from skills | SQLite queries via MCP |
-| `json_stringify` | JSON serialization | Ticket creation |
-| `timestamp()` | Current time for unique IDs | Ticket and escalation IDs |
+| Neam Concept | What It Does in This Project |
+|---|---|
+| `claw agent` | Persistent conversational agent type |
+| `knowledge` + `hybrid` RAG | Policy Q&A from real business documents |
+| `skill` with `sensitive: true` | Human-approval gate before escalation |
+| `session` (JSONL) | Conversation memory that survives restarts |
+| `semantic_memory` | Long-term fact retention across sessions |
+| `flush_on_compact` | Extract facts before summarization — nothing lost |
+| `lanes` | Priority queues — VIP customers get faster responses |
+| `connected_knowledge` | RAG context injected into every LLM call |
+| `impl Schedulable` | 5-minute heartbeat to monitor ticket directory |
+| `impl Monitorable` | Detects escalation spikes (>5/hour triggers alert) |
+| `impl Sandboxable` | Strict mode — network, filesystem, memory restricted |
 
 ---
 
-## 📊 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Health check (no auth required) |
-| `GET` | `/api/v1/claw` | List active claw agents |
-| `POST` | `/api/v1/claw/support_bot/sessions/{key}/message` | Send message |
-| `POST` | `/api/v1/claw/support_bot/sessions/{key}/reset` | Reset session |
+| `GET` | `/health` | Health check (no auth) |
+| `POST` | `/api/v1/claw/support_bot/sessions/{key}/message` | Send message to Nova |
+| `POST` | `/api/v1/claw/support_bot/sessions/{key}/reset` | Reset conversation |
 | `POST` | `/api/v1/claw/support_bot/compact` | Trigger manual compaction |
 | `GET` | `/api/v1/metrics` | Runtime metrics |
 
-All endpoints (except `/health`) require `Authorization: Bearer <NEAM_API_KEY>`.
-
 ---
 
-## ⚙️ Configuration Reference
-
-| Parameter | Value | Why |
-|---|---|---|
-| `provider` | `ollama` | Free, local, no API keys |
-| `model` | `llama3.1` | Best open model for tool calling |
-| `temperature` | `0.3` | Low = consistent, accurate answers |
-| `retrieval_strategy` | `hybrid` | BM25 + vector = best of both worlds |
-| `top_k` | `4` | Balances context richness vs noise |
-| `idle_reset_minutes` | `30` | Reset stale sessions |
-| `max_history_turns` | `60` | Full support conversation length |
-
----
-
-## 📄 License
+## License
 
 MIT License
 
 ---
 
-## 🙏 Acknowledgments
-
-- **Neam Language** — [neam-lang/neam](https://github.com/neam-lang/neam)
-- **Ollama** — [ollama.com](https://ollama.com) for free local LLM inference
-- **Mentor** — Praveen Govindaraj for project guidance
+Built with the [Neam programming language](https://github.com/neam-lang/neam) · Powered by [Ollama](https://ollama.com) · Guided by [Praveen Govindaraj](https://github.com/Praveengovianalytics)
