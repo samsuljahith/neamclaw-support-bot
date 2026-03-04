@@ -4,7 +4,7 @@
 
 <br/>
 
-https://github.com/samsuljahith/neamclaw-support-bot/raw/master/assets/neam-robot.mp4
+![Neam Robot](assets/neam-robot.gif)
 
 # TechNova Support Bot
 
