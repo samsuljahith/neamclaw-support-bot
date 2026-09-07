@@ -11,7 +11,7 @@
 ### Built with Neam's Claw Agent Spec — Deployed as a Claude Haiku-Backed FastAPI Service
 
 [![Neam](https://img.shields.io/badge/Built%20with-Neam-6366f1?style=for-the-badge)](https://github.com/neam-lang/neam)
-[![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-000000?style=for-the-badge)](https://ollama.com)
+[![Claude Haiku](https://img.shields.io/badge/Powered%20by-Claude%20Haiku-6366f1?style=for-the-badge)](https://www.anthropic.com/claude)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 > **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam.**
@@ -181,7 +181,7 @@ claw agent support_bot {
 
 | Metric | Before | With Nova (Neam) |
 |---|---|---|
-| Cost per interaction | $5–$15 | **$0 cloud API cost** (runs on your hardware) |
+| Cost per interaction | $5–$15 | Claude Haiku pricing (cheapest current Anthropic tier) — pay-per-token, not $0 |
 | Response time | 2–8 hours | **< 2 seconds** |
 | Availability | Business hours | **24/7 / 365** |
 | Conversation memory | Agent must re-ask every time | **Full persistent history** |
@@ -224,7 +224,7 @@ neamclaw-support-bot/
 │   ├── return_policy.md      # 30-day return policy
 │   ├── shipping_info.md      # Domestic + 40-country shipping rates
 │   └── warranty.md           # 1-year warranty terms + claim process
-├── docker-compose.yml        # Ollama + bot (one-command setup)
+├── docker-compose.yml        # Spec-only — builds the Neam runtime, not app/ (see file header)
 ├── Dockerfile                # Multi-stage build
 ├── .env.example
 └── README.md
@@ -261,4 +261,4 @@ MIT License
 
 ---
 
-Built with the [Neam programming language](https://github.com/neam-lang/neam) · Powered by [Ollama](https://ollama.com) · Guided by [Praveen Govindaraj](https://github.com/Praveengovianalytics)
+Built on the [Neam programming language](https://github.com/neam-lang/neam) spec · Deployed on Claude Haiku · Guided by [Praveen Govindaraj](https://github.com/Praveengovianalytics)
