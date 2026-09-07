@@ -1,6 +1,11 @@
 # ============================================================
 # TechNova Support Bot — Docker Build
 # Multi-stage: compile Neam → minimal runtime
+#
+# NOTE: this builds the Neam SPEC runtime (support_bot.neam via the
+# external neam-lang/neamc and neam-lang/runtime images), not the
+# deployed app. The real, working implementation is app/ — build that
+# with Dockerfile.lambda instead.
 # ============================================================
 
 # --- Stage 1: Builder ---

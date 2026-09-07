@@ -8,7 +8,7 @@
 
 # TechNova Support Bot
 
-### Built with Neam's Claw Agent — Local AI, Zero Cloud API Cost
+### Built with Neam's Claw Agent Spec — Deployed as a Claude Haiku-Backed FastAPI Service
 
 [![Neam](https://img.shields.io/badge/Built%20with-Neam-6366f1?style=for-the-badge)](https://github.com/neam-lang/neam)
 [![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-000000?style=for-the-badge)](https://ollama.com)
@@ -16,7 +16,7 @@
 
 > **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam.**
 
-> **Zero cloud API costs.** Runs entirely on your own hardware using Ollama. You pay for your machine and electricity — not per token, not per call, not per month to any AI provider.
+> **Pay-per-use cloud API costs.** The deployed implementation (`app/`) calls Anthropic's Claude Haiku API — you pay Anthropic per token. A rule-based fallback runs with zero API cost when no key is configured, but it isn't an LLM.
 
 </div>
 
@@ -43,13 +43,13 @@ Small and mid-size e-commerce businesses can't afford 24/7 support teams — but
 
 I used **Neam's Claw Agent** — a persistent, conversational agent type — to build a support bot that:
 
-- **Knows your business**: Hybrid RAG knowledge base with your actual FAQ, return policy, shipping info, and warranty docs
-- **Remembers context**: JSONL session storage that survives server restarts and auto-compacts at 80% token budget
+- **Knows your business**: TF-IDF keyword-overlap knowledge base built from your actual FAQ, return policy, shipping info, and warranty docs (no vector search)
+- **Remembers context**: JSON session storage that survives server restarts, capped at the last 120 messages (no token-budget-based compaction)
 - **Calls real tools**: 5 skills that query your actual SQLite database (orders, products, customers)
-- **Runs locally for free**: Ollama + llama3.1 — no cloud API costs, ever
-- **Handles traffic**: Concurrency lanes for default and VIP priority queues
+- **LLM**: Claude Haiku via Anthropic's API (pay-per-token), with a regex/keyword rule-based fallback when no API key is set
+- **Handles traffic**: standard synchronous request handling — no priority-queue/concurrency-lane logic in the deployed code
 
-**Result: A support agent with $0/month in cloud AI costs (vs. $500+/month for GPT-4/Claude APIs) that handles unlimited conversations 24/7 — running on hardware you already own.**
+**Result: A support agent that costs Anthropic API usage per conversation (Claude Haiku is the cheapest tier), with a $0-cost rule-based fallback when no API key is set. Runs as an AWS Lambda function (see `app/`, `infra/`), not on local hardware.**
 
 ---
 
@@ -87,35 +87,30 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-    Customer(["👤 Customer\n(CLI / HTTP)"])
+    Customer(["👤 Customer\n(HTTP)"])
 
-    subgraph NeamClaw["🦾 NeamClaw Runtime"]
-        Guard["🛡️ Security Guard\n(input validation)"]
-        Lane["🚦 Lane Router\n(default / VIP queues)"]
-        Session["💾 Session Manager\n(JSONL + auto-compaction)"]
-        Context["📋 Context Builder\n(prompt + history + RAG + memory)"]
-        LLM["🦙 Ollama llama3.1\n(local — no cloud)"]
-        Skills["🔧 5 Business Skills"]
+    subgraph App["🐍 FastAPI App (app/)"]
+        Auth["🔑 Bearer-token auth\n(single shared API key)"]
+        Session["💾 Session Manager\n(JSON file per session, last 120 messages)"]
+        KB["📚 Knowledge Search\n(TF-IDF term overlap)"]
+        LLM["🤖 Claude Haiku\n(or rule-based fallback\nif no API key)"]
+        Tools["🔧 5 Tool Calls"]
     end
 
     subgraph Data["Data Layer"]
         SQLite[("🗄️ SQLite\n(orders, products, customers)")]
-        KB["📚 Knowledge Base\n(4 policy docs — hybrid RAG)"]
-        Memory["🧠 Semantic Memory\n(SQLite — hybrid search)"]
-        Workspace["📁 Workspace\n(tickets, escalations)"]
+        Workspace["📁 /tmp\n(tickets, escalations)"]
     end
 
-    Customer -->|message| Guard
-    Guard --> Lane
-    Lane --> Session
-    Session --> Context
-    Context --> LLM
-    LLM --> Skills
-    Skills -->|order lookup| SQLite
-    Skills -->|policy Q&A| KB
-    Skills -->|ticket create| Workspace
-    Memory -->|inject context| Context
-    LLM -->|response| Customer
+    Customer -->|message| Auth
+    Auth --> Session
+    Session --> KB
+    KB --> LLM
+    LLM --> Tools
+    Tools -->|order/product lookup| SQLite
+    Tools -->|ticket/escalation| Workspace
+    LLM --> Session
+    Session -->|response| Customer
 ```
 
 ---
@@ -134,7 +129,11 @@ flowchart TB
 
 ## The Claw Agent in Neam
 
-The entire support system lives in **273 lines** of Neam:
+> ⚠️ **Spec, not deployed code — see `app/` for what actually runs.** This is the original
+> Neam design, **273 lines**. The deployed service (`app/`) is a hand-written Python/FastAPI
+> reimplementation of this spec's HTTP shape — see `app/main.py`'s docstring for why. Fields
+> below (`vector_store`, `provider: "ollama"`, `semantic_memory`, `lanes`) describe this
+> spec's intent, not the deployed code's actual behavior.
 
 ```neam
 // 1. RAG Knowledge Base — your real business documents
@@ -188,43 +187,28 @@ claw agent support_bot {
 | Conversation memory | Agent must re-ask every time | **Full persistent history** |
 | Policy knowledge | Requires staff training | **Instant via RAG** |
 | Order lookup | Human searches manually | **Automatic via skill** |
-| Monthly cloud AI cost | $500+ (GPT-4 / Claude API) | **$0 — no cloud API used** |
+| Monthly cloud AI cost | $500+ (GPT-4-class API) | Claude Haiku pricing (cheapest current Anthropic tier) — pay-per-token, not $0 |
 | Infrastructure cost | Variable | Hardware + electricity you already own |
 
 ---
 
 ## Quick Start
 
-### Docker (Recommended)
-
 ```bash
 git clone https://github.com/samsuljahith/neamclaw-support-bot.git
 cd neamclaw-support-bot
 
-cp .env.example .env
-docker compose up --build
-# First run pulls llama3.1 (~4.7 GB) — takes 5–10 minutes
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY=sk-ant-...   # optional — omit for the rule-based fallback
+sqlite3 ./data/technova.db < ./data/seed.sql
+
+uvicorn app.main:app --port 8080
 
 # Test it:
 curl -X POST http://localhost:8080/api/v1/claw/support_bot/sessions/test/message \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer dev-key-change-me" \
   -d '{"message": "What is your return policy?"}'
-```
-
-### Local Setup
-
-```bash
-git clone https://github.com/samsuljahith/neamclaw-support-bot.git
-cd neamclaw-support-bot
-
-ollama pull llama3.1 && ollama pull nomic-embed-text
-sqlite3 ./data/technova.db < ./data/seed.sql
-
-neamc support_bot.neam -o support_bot.neamb
-neam support_bot.neamb          # CLI mode
-# OR
-neam-api --program support_bot.neamb --port 8080   # HTTP mode
 ```
 
 ---
@@ -253,16 +237,9 @@ neamclaw-support-bot/
 | Neam Concept | What It Does in This Project |
 |---|---|
 | `claw agent` | Persistent conversational agent type |
-| `knowledge` + `hybrid` RAG | Policy Q&A from real business documents |
-| `skill` with `sensitive: true` | Human-approval gate before escalation |
+| `knowledge` + `hybrid` RAG | Spec describes hybrid RAG; deployed code does TF-IDF retrieval only |
 | `session` (JSONL) | Conversation memory that survives restarts |
-| `semantic_memory` | Long-term fact retention across sessions |
-| `flush_on_compact` | Extract facts before summarization — nothing lost |
-| `lanes` | Priority queues — VIP customers get faster responses |
-| `connected_knowledge` | RAG context injected into every LLM call |
-| `impl Schedulable` | 5-minute heartbeat to monitor ticket directory |
-| `impl Monitorable` | Detects escalation spikes (>5/hour triggers alert) |
-| `impl Sandboxable` | Strict mode — network, filesystem, memory restricted |
+| `connected_knowledge` | Knowledge-search context injected into every LLM call |
 
 ---
 
@@ -271,9 +248,9 @@ neamclaw-support-bot/
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Health check (no auth) |
+| `GET` | `/api/v1/claw` | List active Claw agents |
 | `POST` | `/api/v1/claw/support_bot/sessions/{key}/message` | Send message to Nova |
 | `POST` | `/api/v1/claw/support_bot/sessions/{key}/reset` | Reset conversation |
-| `POST` | `/api/v1/claw/support_bot/compact` | Trigger manual compaction |
 | `GET` | `/api/v1/metrics` | Runtime metrics |
 
 ---

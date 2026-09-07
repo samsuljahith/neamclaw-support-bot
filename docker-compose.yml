@@ -1,3 +1,9 @@
+# NOTE: this compose file targets the Neam SPEC runtime (it builds the
+# plain Dockerfile, which compiles support_bot.neam against external
+# neam-lang/neamc and neam-lang/runtime images), not the deployed app.
+# The real, working implementation is app/ — build that with
+# Dockerfile.lambda instead.
+
 version: "3.8"
 
 services:
