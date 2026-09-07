@@ -14,7 +14,7 @@
 [![Claude Haiku](https://img.shields.io/badge/Powered%20by-Claude%20Haiku-6366f1?style=for-the-badge)](https://www.anthropic.com/claude)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-> **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Built in 273 lines of Neam.**
+> **An AI-powered customer support agent for e-commerce — persistent, context-aware, business-smart. Deployed as the Python/FastAPI service in `app/`, built from a 273-line Neam design spec (`support_bot.neam`).**
 
 > **Pay-per-use cloud API costs.** The deployed implementation (`app/`) calls Anthropic's Claude Haiku API — you pay Anthropic per token. A rule-based fallback runs with zero API cost when no key is configured, but it isn't an LLM.
 
